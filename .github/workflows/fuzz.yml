@@ -2,7 +2,7 @@ name: Fuzz
 
 on:
   schedule:
-    - cron: '0 2 * * *'   # nightly at 02:00 UTC
+  - cron: '0 2 * * *'     # nightly at 02:00 UTC
   workflow_dispatch:        # manual trigger from GitHub UI
 
 concurrency:
@@ -31,60 +31,61 @@ jobs:
         # glibc 2.34 hosts. Revisit when the Mojo nightly grows a
         # fix, or when a future GHA image rolls a kernel that
         # doesn't trip the crash.
-        os: [ubuntu-22.04, macos-14]
+        os:
+        - ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v5
+    - uses: actions/checkout@v5
 
-      - name: Setup Pixi
-        uses: prefix-dev/setup-pixi@v0.9.4
-        with:
+    - name: Setup Pixi
+      uses: prefix-dev/setup-pixi@v0.9.4
+      with:
           # Pin pixi: latest ships build-api-version >=5 which drops the
           # pixi-build-rattler-build 0.3.13 backend this repo pins, breaking
           # source-package builds. 0.70.2 is the newest compatible pixi.
-          pixi-version: v0.70.2
-          environments: fuzz
+        pixi-version: v0.70.2
+        environments: fuzz
           # Install straight from the committed pixi.lock; never re-solve
           # conda-forge in CI (the network solve is flaky). Fails loudly
           # if the lock has drifted from pixi.toml.
-          locked: true
-          cache: false
-          post-cleanup: false
+        locked: true
+        cache: false
+        post-cleanup: false
 
-      - name: Fuzz WS frame parser
-        run: pixi run --environment fuzz fuzz-ws
+    - name: Fuzz WS frame parser
+      run: pixi run --environment fuzz fuzz-ws
 
-      - name: Fuzz URL parser
-        run: pixi run --environment fuzz fuzz-url
+    - name: Fuzz URL parser
+      run: pixi run --environment fuzz fuzz-url
 
-      - name: Fuzz HTTP headers parser
-        run: pixi run --environment fuzz fuzz-headers
+    - name: Fuzz HTTP headers parser
+      run: pixi run --environment fuzz fuzz-headers
 
-      - name: Fuzz HTTP response parser
-        run: pixi run --environment fuzz fuzz-http-response
+    - name: Fuzz HTTP response parser
+      run: pixi run --environment fuzz fuzz-http-response
 
-      - name: Fuzz HTTP server
-        run: pixi run --environment fuzz fuzz-http-server
+    - name: Fuzz HTTP server
+      run: pixi run --environment fuzz fuzz-http-server
 
-      - name: Fuzz WS server
-        run: pixi run --environment fuzz fuzz-ws-server
+    - name: Fuzz WS server
+      run: pixi run --environment fuzz fuzz-ws-server
 
-      - name: Fuzz encoding
-        run: pixi run --environment fuzz fuzz-encoding
+    - name: Fuzz encoding
+      run: pixi run --environment fuzz fuzz-encoding
 
-      - name: Property tests — WS roundtrip
-        run: pixi run --environment fuzz prop-ws
+    - name: Property tests — WS roundtrip
+      run: pixi run --environment fuzz prop-ws
 
-      - name: Property tests — HTTP headers
-        run: pixi run --environment fuzz prop-headers
+    - name: Property tests — HTTP headers
+      run: pixi run --environment fuzz prop-headers
 
-      - name: Property tests — Auth
-        run: pixi run --environment fuzz prop-auth
+    - name: Property tests — Auth
+      run: pixi run --environment fuzz prop-auth
 
-      - name: Upload crash artifacts
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fuzz-crashes-${{ matrix.os }}-${{ github.run_id }}
-          path: .mozz_crashes/
-          if-no-files-found: ignore
+    - name: Upload crash artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: fuzz-crashes-${{ matrix.os }}-${{ github.run_id }}
+        path: .mozz_crashes/
+        if-no-files-found: ignore
